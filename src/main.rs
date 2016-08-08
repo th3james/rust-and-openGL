@@ -8,6 +8,13 @@ struct Vertex {
 }
 implement_vertex!(Vertex, position);
 
+fn build_vertices(time: f32) -> std::vec::Vec<Vertex> {
+    let vertex1 = Vertex { position: [-0.5 + time, -0.5] };
+    let vertex2 = Vertex { position: [0.0 + time, 0.5] };
+    let vertex3 = Vertex { position: [0.0 + time, -0.25] };
+    return vec![vertex1, vertex2, vertex3];
+}
+
 fn main() {
     use glium::DisplayBuild;
     let display = glium::glutin::WindowBuilder::new()
@@ -49,10 +56,7 @@ fn main() {
             time = -0.5;
         }
 
-        let vertex1 = Vertex { position: [-0.5 + time, -0.5] };
-        let vertex2 = Vertex { position: [0.0 + time, 0.5] };
-        let vertex3 = Vertex { position: [0.0 + time, -0.25] };
-        let shape = vec![vertex1, vertex2, vertex3];
+        let shape = build_vertices(time);
 
         let vertex_buffer = glium::VertexBuffer::new(
             &display, &shape
