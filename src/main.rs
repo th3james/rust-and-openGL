@@ -8,10 +8,10 @@ struct Vertex {
 }
 implement_vertex!(Vertex, position);
 
-fn build_vertices(time: f32) -> std::vec::Vec<Vertex> {
-    let vertex1 = Vertex { position: [-0.5 + time, -0.5] };
-    let vertex2 = Vertex { position: [0.0 + time, 0.5] };
-    let vertex3 = Vertex { position: [0.0 + time, -0.25] };
+fn build_vertices() -> std::vec::Vec<Vertex> {
+    let vertex1 = Vertex { position: [-0.5, -0.5] };
+    let vertex2 = Vertex { position: [0.0, 0.5] };
+    let vertex3 = Vertex { position: [0.0, -0.25] };
     return vec![vertex1, vertex2, vertex3];
 }
 
@@ -35,9 +35,12 @@ fn main() {
         #version 140
 
         in vec2 position;
+        uniform float time;
 
         void main() {
-            gl_Position = vec4(position, 0.0, 1.0);
+            vec2 pos = position;
+            pos.x += time;
+            gl_Position = vec4(pos, 0.0, 1.0);
         }
     "#;
     let fragment_shader_src = r#"
@@ -54,24 +57,24 @@ fn main() {
         &display, vertex_shader_src, fragment_shader_src, None
     ).unwrap();
 
+    let shape = build_vertices();
+
+    let vertex_buffer = glium::VertexBuffer::new(
+        &display, &shape
+    ).unwrap();
 
     let mut time: f32 = -0.5;
 
     loop {
         time = update_time(time);
 
-        let shape = build_vertices(time);
-
-        let vertex_buffer = glium::VertexBuffer::new(
-            &display, &shape
-        ).unwrap();
-
         let mut target = display.draw();
 
         target.clear_color(0.0, 0.0, 0.1, 0.1);
+        let uniform = uniform! {time: time};
         target.draw(
             &vertex_buffer, &indices, &program,
-            &glium::uniforms::EmptyUniforms, &Default::default()
+            &uniform, &Default::default()
         ).unwrap();
         target.finish().unwrap();
 
