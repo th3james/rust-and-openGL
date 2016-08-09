@@ -15,6 +15,14 @@ fn build_vertices(time: f32) -> std::vec::Vec<Vertex> {
     return vec![vertex1, vertex2, vertex3];
 }
 
+fn update_time(mut time: f32) -> f32 {
+    time += 0.0002;
+    if time > 0.5 {
+        time = -0.5;
+    }
+    return time;
+}
+
 fn main() {
     use glium::DisplayBuild;
     let display = glium::glutin::WindowBuilder::new()
@@ -50,11 +58,7 @@ fn main() {
     let mut time: f32 = -0.5;
 
     loop {
-        // we update `t`
-        time += 0.0002;
-        if time > 0.5 {
-            time = -0.5;
-        }
+        time = update_time(time);
 
         let shape = build_vertices(time);
 
