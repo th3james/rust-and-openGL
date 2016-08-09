@@ -35,12 +35,10 @@ fn main() {
         #version 140
 
         in vec2 position;
-        uniform float time;
+        uniform mat4 matrix;
 
         void main() {
-            vec2 pos = position;
-            pos.x += time;
-            gl_Position = vec4(pos, 0.0, 1.0);
+            gl_Position = matrix * vec4(position, 0.0, 1.0);
         }
     "#;
     let fragment_shader_src = r#"
@@ -71,7 +69,14 @@ fn main() {
         let mut target = display.draw();
 
         target.clear_color(0.0, 0.0, 0.1, 0.1);
-        let uniform = uniform! {time: time};
+        let uniform = uniform! {
+            matrix: [
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [time, 0.0, 0.0, 1.0f32],
+            ]
+        };
         target.draw(
             &vertex_buffer, &indices, &program,
             &uniform, &Default::default()
