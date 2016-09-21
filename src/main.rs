@@ -1,6 +1,9 @@
 #[macro_use]
 extern crate glium;
+extern crate image;
+
 use glium::Surface;
+use std::io::Cursor;
 
 #[derive(Clone, Copy)]
 struct Vertex {
@@ -23,6 +26,13 @@ fn update_time(mut time: f32) -> f32 {
     return time;
 }
 
+fn load_image<'a>(filepath: &String, lifetime: &'a Option<String>) -> glium::texture::RawImage2d<'a, u8> { 
+    let image = image::load(Cursor::new(&include_bytes!("../test.png")[..]),
+                        image::PNG).unwrap().to_rgba();
+    let image_dimensions = image.dimensions();
+    glium::texture::RawImage2d::from_raw_rgba_reversed(image.into_raw(), image_dimensions)
+}
+
 fn main() {
     use glium::DisplayBuild;
     let display = glium::glutin::WindowBuilder::new()
@@ -35,25 +45,33 @@ fn main() {
         #version 140
 
         in vec2 position;
+        out vec2 my_attr;
+
         uniform mat4 matrix;
 
         void main() {
+            my_attr = position;
             gl_Position = matrix * vec4(position, 0.0, 1.0);
         }
     "#;
     let fragment_shader_src = r#"
         #version 140
 
+        in vec2 my_attr;
         out vec4 color;
+        uniform mat4 matrix;
 
         void main() {
-            color = vec4(1.0, 0.0, 0.0, 1.0);
+            color = vec4(my_attr, 0.0, 1.0);
         }
     "#;
 
     let program = glium::Program::from_source(
         &display, vertex_shader_src, fragment_shader_src, None
     ).unwrap();
+
+    let lifetime = None;
+    let image = load_image(&"test.png".to_string(), &lifetime);
 
     let shape = build_vertices();
 
@@ -71,10 +89,10 @@ fn main() {
         target.clear_color(0.0, 0.0, 0.1, 0.1);
         let uniform = uniform! {
             matrix: [
-                [1.0, 0.0, 0.0, 0.0],
-                [0.0, 1.0, 0.0, 0.0],
+                [time.cos(), time.sin(), 0.0, 0.0],
+                [-time.sin(), time.cos(), 0.0, 0.0],
                 [0.0, 0.0, 1.0, 0.0],
-                [time, 0.0, 0.0, 1.0f32],
+                [0.0, 0.0, 0.0, 1.0f32],
             ]
         };
         target.draw(
