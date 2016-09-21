@@ -26,8 +26,8 @@ fn update_time(mut time: f32) -> f32 {
     return time;
 }
 
-fn load_image<'a>(filepath: &String, lifetime: &'a Option<String>) -> glium::texture::RawImage2d<'a, u8> { 
-    let image = image::load(Cursor::new(&include_bytes!("../test.png")[..]),
+fn load_image<'a>(image_data: &'a [u8]) -> glium::texture::RawImage2d<'a, u8> { 
+    let image = image::load(Cursor::new(image_data),
                         image::PNG).unwrap().to_rgba();
     let image_dimensions = image.dimensions();
     glium::texture::RawImage2d::from_raw_rgba_reversed(image.into_raw(), image_dimensions)
@@ -70,8 +70,10 @@ fn main() {
         &display, vertex_shader_src, fragment_shader_src, None
     ).unwrap();
 
-    let lifetime = None;
-    let image = load_image(&"test.png".to_string(), &lifetime);
+    let image_data = &include_bytes!("../test.png")[..];
+    let image = load_image(&image_data);
+
+    let texture = glium::texture::Texture2d::new(&display, image).unwrap();
 
     let shape = build_vertices();
 
