@@ -40,26 +40,34 @@ fn main() {
     use glium::DisplayBuild;
     let display = glium::glutin::WindowBuilder::new()
         .build_glium().unwrap();
+    let indices = glium::index::NoIndices(
+        glium::index::PrimitiveType::TrianglesList
+    );
         
     let vertex_shader_src = r#"
         #version 140
 
-        in vec3 position;
-        in vec3 normal;
+        in vec2 position;
+        in vec2 tex_coords;
+        out vec2 v_tex_coords;
 
         uniform mat4 matrix;
 
         void main() {
-            gl_Position = matrix * vec4(position, 1.0);
+            v_tex_coords = tex_coords;
+            gl_Position = matrix * vec4(position, 0.0, 1.0);
         }
     "#;
     let fragment_shader_src = r#"
         #version 140
 
+        in vec2 v_tex_coords;
         out vec4 color;
 
+        uniform sampler2D tex;
+
         void main() {
-            color = vec4(1.0, 0.0, 0.0, 1.0);
+            color = texture(tex, v_tex_coords);
         }
     "#;
 
@@ -72,17 +80,10 @@ fn main() {
 
     let texture = glium::texture::Texture2d::new(&display, image).unwrap();
 
-    //let shape = build_vertices();
+    let shape = build_vertices();
 
-    let position = glium::VertexBuffer::new(
-        &display, &teapot::VERTICES
-    ).unwrap();
-    let normals = glium::VertexBuffer::new(
-        &display, &teapot::NORMALS
-    ).unwrap();
-    let indices = glium::IndexBuffer::new(
-        &display, glium::index::PrimitiveType::TrianglesList,
-        &teapot::INDICES
+    let vertex_buffer = glium::VertexBuffer::new(
+        &display, &shape
     ).unwrap();
 
     let mut time: f32 = -0.5;
@@ -95,15 +96,15 @@ fn main() {
         target.clear_color(0.0, 0.0, 0.1, 0.1);
         let uniforms = uniform! {
             matrix: [
-                [0.01, 0.0, 0.0, 0.0],
-                [0.0, 0.01, 0.0, 0.0],
-                [0.0, 0.0, 0.01, 0.0],
-                [0.0 , 0.0, 0.0, 1.0f32],
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [ time , 0.0, 0.0, 1.0f32],
             ],
             tex: &texture,
         };
         target.draw(
-            (&position, &normals), &indices, &program,
+            &vertex_buffer, &indices, &program,
             &uniforms, &Default::default()
         ).unwrap();
         target.finish().unwrap();
