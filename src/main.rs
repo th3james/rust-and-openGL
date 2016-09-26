@@ -8,13 +8,14 @@ use std::io::Cursor;
 #[derive(Clone, Copy)]
 struct Vertex {
     position: [f32; 2],
+    tex_coords: [f32; 2],
 }
-implement_vertex!(Vertex, position);
+implement_vertex!(Vertex, position, tex_coords);
 
 fn build_vertices() -> std::vec::Vec<Vertex> {
-    let vertex1 = Vertex { position: [-0.5, -0.5] };
-    let vertex2 = Vertex { position: [0.0, 0.5] };
-    let vertex3 = Vertex { position: [0.0, -0.25] };
+    let vertex1 = Vertex { position: [-0.5, -0.5],  tex_coords: [0.0, 0.0] };
+    let vertex2 = Vertex { position: [0.0, 0.5],    tex_coords: [0.0, 1.0] };
+    let vertex3 = Vertex { position: [0.0, -0.25],  tex_coords: [1.0, 0.0] };
     return vec![vertex1, vertex2, vertex3];
 }
 
@@ -45,24 +46,26 @@ fn main() {
         #version 140
 
         in vec2 position;
-        out vec2 my_attr;
+        in vec2 tex_coords;
+        out vec2 v_tex_coords;
 
         uniform mat4 matrix;
 
         void main() {
-            my_attr = position;
+            v_tex_coords = tex_coords;
             gl_Position = matrix * vec4(position, 0.0, 1.0);
         }
     "#;
     let fragment_shader_src = r#"
         #version 140
 
-        in vec2 my_attr;
+        in vec2 v_tex_coords;
         out vec4 color;
-        uniform mat4 matrix;
+
+        uniform sampler2D tex;
 
         void main() {
-            color = vec4(my_attr, 0.0, 1.0);
+            color = texture(tex, v_tex_coords);
         }
     "#;
 
@@ -71,7 +74,7 @@ fn main() {
     ).unwrap();
 
     let image_data = &include_bytes!("../test.png")[..];
-    let image = load_image(&image_data);
+    let image = load_image(image_data);
 
     let texture = glium::texture::Texture2d::new(&display, image).unwrap();
 
@@ -89,17 +92,18 @@ fn main() {
         let mut target = display.draw();
 
         target.clear_color(0.0, 0.0, 0.1, 0.1);
-        let uniform = uniform! {
+        let uniforms = uniform! {
             matrix: [
-                [time.cos(), time.sin(), 0.0, 0.0],
-                [-time.sin(), time.cos(), 0.0, 0.0],
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
                 [0.0, 0.0, 1.0, 0.0],
-                [0.0, 0.0, 0.0, 1.0f32],
-            ]
+                [ time , 0.0, 0.0, 1.0f32],
+            ],
+            tex: &texture,
         };
         target.draw(
             &vertex_buffer, &indices, &program,
-            &uniform, &Default::default()
+            &uniforms, &Default::default()
         ).unwrap();
         target.finish().unwrap();
 
