@@ -3,7 +3,6 @@ extern crate glium;
 extern crate image;
 
 use glium::Surface;
-use std::io::Cursor;
 
 mod teapot;
 
@@ -14,13 +13,6 @@ struct Vertex {
 }
 implement_vertex!(Vertex, position, tex_coords);
 
-fn build_vertices() -> std::vec::Vec<Vertex> {
-    let vertex1 = Vertex { position: [-0.5, -0.5],  tex_coords: [0.0, 0.0] };
-    let vertex2 = Vertex { position: [0.0, 0.5],    tex_coords: [0.0, 1.0] };
-    let vertex3 = Vertex { position: [0.0, -0.25],  tex_coords: [1.0, 0.0] };
-    return vec![vertex1, vertex2, vertex3];
-}
-
 fn update_time(mut time: f32) -> f32 {
     time += 0.0002;
     if time > 0.5 {
@@ -29,50 +21,45 @@ fn update_time(mut time: f32) -> f32 {
     return time;
 }
 
-fn load_image<'a>(image_data: &'a [u8]) -> glium::texture::RawImage2d<'a, u8> { 
-    let image = image::load(Cursor::new(image_data),
-                        image::PNG).unwrap().to_rgba();
-    let image_dimensions = image.dimensions();
-    glium::texture::RawImage2d::from_raw_rgba_reversed(image.into_raw(), image_dimensions)
-}
-
 fn main() {
     use glium::DisplayBuild;
     let display = glium::glutin::WindowBuilder::new()
         .build_glium().unwrap();
         
     let vertex_shader_src = r#"
-        #version 140
+        #version 150
 
         in vec3 position;
         in vec3 normal;
 
+        out vec3 v_normal;
+
         uniform mat4 matrix;
 
         void main() {
+            v_normal = transpose(inverse(mat3(matrix))) * normal;
             gl_Position = matrix * vec4(position, 1.0);
         }
     "#;
     let fragment_shader_src = r#"
-        #version 140
+        #version 150
 
+        in vec3 v_normal;
         out vec4 color;
 
+        uniform vec3 u_light;
+
         void main() {
-            color = vec4(1.0, 0.0, 0.0, 1.0);
+            float brightness = dot(normalize(v_normal), normalize(u_light));
+            vec3 dark_color = vec3(0.6, 0.0, 0.0);
+            vec3 regular_color = vec3(1.0, 0.0, 0.0);
+            color = vec4(mix(dark_color, regular_color, brightness), 1.0);
         }
     "#;
 
     let program = glium::Program::from_source(
         &display, vertex_shader_src, fragment_shader_src, None
     ).unwrap();
-
-    let image_data = &include_bytes!("../test.png")[..];
-    let image = load_image(image_data);
-
-    let texture = glium::texture::Texture2d::new(&display, image).unwrap();
-
-    //let shape = build_vertices();
 
     let position = glium::VertexBuffer::new(
         &display, &teapot::VERTICES
@@ -86,6 +73,7 @@ fn main() {
     ).unwrap();
 
     let mut time: f32 = -0.5;
+    let light = [-1.0, 0.4, 0.9f32];
 
     loop {
         time = update_time(time);
@@ -100,7 +88,7 @@ fn main() {
                 [0.0, 0.0, 0.01, 0.0],
                 [0.0 , 0.0, 0.0, 1.0f32],
             ],
-            tex: &texture,
+            u_light: light,
         };
         target.draw(
             (&position, &normals), &indices, &program,
