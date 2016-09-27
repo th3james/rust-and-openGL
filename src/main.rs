@@ -24,6 +24,7 @@ fn update_time(mut time: f32) -> f32 {
 fn main() {
     use glium::DisplayBuild;
     let display = glium::glutin::WindowBuilder::new()
+        .with_depth_buffer(24)
         .build_glium().unwrap();
         
     let vertex_shader_src = r#"
@@ -75,12 +76,21 @@ fn main() {
     let mut time: f32 = -0.5;
     let light = [-1.0, 0.4, 0.9f32];
 
+    let draw_params = glium::DrawParameters {
+        depth: glium::Depth {
+            test: glium::draw_parameters::DepthTest::IfLess,
+            write: true,
+            .. Default::default()
+        },
+        .. Default::default()
+    };
+
     loop {
         time = update_time(time);
 
         let mut target = display.draw();
 
-        target.clear_color(0.0, 0.0, 0.1, 0.1);
+        target.clear_color_and_depth((0.0, 0.0, 1.0, 1.0), 1.0);
         let uniforms = uniform! {
             matrix: [
                 [0.01, 0.0, 0.0, 0.0],
@@ -92,7 +102,7 @@ fn main() {
         };
         target.draw(
             (&position, &normals), &indices, &program,
-            &uniforms, &Default::default()
+            &uniforms, &draw_params
         ).unwrap();
         target.finish().unwrap();
 
