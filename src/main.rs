@@ -13,6 +13,14 @@ struct Vertex {
 }
 implement_vertex!(Vertex, position, tex_coords);
 
+fn build_matrix(time: &f32) -> [[f32; 4]; 4] {
+    [
+        [0.01, 0.0, 0.0, 0.0],
+        [0.0, 0.01, 0.0, 0.0],
+        [0.0, 0.0, 0.01, 0.0],
+        [0.0, 0.0, 3.0 * (1.0 + time), 1.0f32],
+    ]
+}
 fn build_perspective(target: &glium::Frame) -> [[f32; 4]; 4]{
     let (width, height) = target.get_dimensions();
     let aspect_ratio = height as f32 / width as f32;
@@ -109,16 +117,12 @@ fn main() {
 
         let mut target = display.draw();
 
+        let matrix = build_matrix(&time);
         let perspective = build_perspective(&target);
 
         target.clear_color_and_depth((0.0, 0.0, 1.0, 1.0), 1.0);
         let uniforms = uniform! {
-            matrix: [
-                [0.01, 0.0, 0.0, 0.0],
-                [0.0, 0.01, 0.0, 0.0],
-                [0.0, 0.0, 0.01, 0.0],
-                [0.0, 0.0, 3.0 * (1.0 + time), 1.0f32],
-            ],
+            matrix: matrix,
             perspective: perspective,
             u_light: light,
         };
