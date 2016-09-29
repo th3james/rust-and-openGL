@@ -97,11 +97,13 @@ fn main() {
         out vec3 v_normal;
 
         uniform mat4 perspective;
-        uniform mat4 matrix;
+        uniform mat4 view;
+        uniform mat4 model;
 
         void main() {
-            v_normal = transpose(inverse(mat3(matrix))) * normal;
-            gl_Position = perspective * matrix * vec4(position, 1.0);
+            mat4 modelview = view * model;
+            v_normal = transpose(inverse(mat3(modelview))) * normal;
+            gl_Position = perspective * modelview * vec4(position, 1.0);
         }
     "#;
     let fragment_shader_src = r#"
@@ -152,12 +154,15 @@ fn main() {
 
         let mut target = display.draw();
 
+        target.clear_color_and_depth((0.0, 0.0, 1.0, 1.0), 1.0);
+
         let matrix = build_matrix(&time);
         let perspective = build_perspective(&target);
+        let view = view_matrix(&[2.0, -1.0, 1.0], &[-2.0, 1.0, 1.0], &[0.0, 1.0, 0.0]);
 
-        target.clear_color_and_depth((0.0, 0.0, 1.0, 1.0), 1.0);
         let uniforms = uniform! {
-            matrix: matrix,
+            model: matrix,
+            view: view,
             perspective: perspective,
             u_light: light,
         };
